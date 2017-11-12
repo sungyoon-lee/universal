@@ -99,14 +99,14 @@ if __name__ == '__main__':
             datafile = os.path.join('data', 'imagenet_data.npy')
             if os.path.isfile(datafile) == 0:
                 print('>> Creating pre-processed imagenet data...')
-                X = create_imagenet_npy(path_train_imagenet)
+                X = create_imagenet_npy(path_train_imagenet) ## ERROR
 
                 print('>> Saving the pre-processed imagenet data')
                 if not os.path.exists('data'):
                     os.makedirs('data')
 
                 # Save the pre-processed images
-                # Caution: This can take take a lot of space. Comment this part to discard saving.
+                # Caution: This can take a lot of space. Comment this part to discard saving.
                 np.save(os.path.join('data', 'imagenet_data.npy'), X)
 
             else:
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 X = np.load(datafile)
 
             # Running universal perturbation
-            v = universal_perturbation(X, f, grad_fs, delta=0.2,num_classes=num_classes)
+            v = universal_perturbation(X, f, grad_fs, delta=0.2, num_classes=num_classes)
 
             # Saving the universal perturbation
             np.save(os.path.join(file_perturbation), v)
