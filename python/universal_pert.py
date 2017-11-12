@@ -55,7 +55,8 @@ def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, 
         print ('Starting pass number ', itr)
 
         # Go through the data set and compute the perturbation increments sequentially
-        for k in range(0, num_images):
+
+        for k in range(0, num_images): # use all the data till we get enough fooling rate 
             cur_img = dataset[k:(k+1), :, :, :] # kth image
             
             # v perturbation cause no difference in classification
