@@ -8,14 +8,15 @@ import sys, getopt
 import zipfile
 from timeit import time
 
-if sys.version_info[0] >= 3:
+# Only used in the case no pb file is ready
+if sys.version_info[0] >= 3: # python >=3
     from urllib.request import urlretrieve
-else:
+else: # python <=2
     from urllib import urlretrieve
 
 
 from universal_pert import universal_perturbation
-device = '/gpu:0'
+device = '/gpu:0' # choose gpu
 num_classes = 10
 
 def jacobian(y_flat, x, inds):
@@ -26,13 +27,13 @@ def jacobian(y_flat, x, inds):
     ]
     _, jacobian = tf.while_loop(
         lambda j,_: j < n,
-        lambda j,result: (j+1, result.write(j, tf.gradients(y_flat[inds[j]], x))),
+        lambda j,result: (j+1, result.write(j, tf.gradients(y_flat[inds[j]], x))), # \nabla_x f_j ?
         loop_vars)
     return jacobian.stack()
 
 if __name__ == '__main__':
 
-    # Parse arguments
+    # Parse arguments (input?)
     argv = sys.argv[1:]
 
     # Default values
@@ -51,12 +52,13 @@ if __name__ == '__main__':
         if opt == '-i':
             path_test_image = arg
 
-    with tf.device(device):
+    with tf.(device):
         persisted_sess = tf.Session()
-        inception_model_path = os.path.join('data', 'tensorflow_inception_graph.pb')
+        inception_model_path = os.path.join('data', 'tensorflow_inception_graph.pb') # concatenation
 
-        if os.path.isfile(inception_model_path) == 0:
+        if os.path.isfile(inception_model_path) == 0: # no file
             print('Downloading Inception model...')
+            # Retrieving from url to the given path
             urlretrieve ("https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip", os.path.join('data', 'inception5h.zip'))
             # Unzipping the file
             zip_ref = zipfile.ZipFile(os.path.join('data', 'inception5h.zip'), 'r')
@@ -97,14 +99,14 @@ if __name__ == '__main__':
             datafile = os.path.join('data', 'imagenet_data.npy')
             if os.path.isfile(datafile) == 0:
                 print('>> Creating pre-processed imagenet data...')
-                X = create_imagenet_npy(path_train_imagenet)
+                X = create_imagenet_npy(path_train_imagenet) ## ERROR
 
                 print('>> Saving the pre-processed imagenet data')
                 if not os.path.exists('data'):
                     os.makedirs('data')
 
                 # Save the pre-processed images
-                # Caution: This can take take a lot of space. Comment this part to discard saving.
+                # Caution: This can take a lot of space. Comment this part to discard saving.
                 np.save(os.path.join('data', 'imagenet_data.npy'), X)
 
             else:
@@ -112,7 +114,7 @@ if __name__ == '__main__':
                 X = np.load(datafile)
 
             # Running universal perturbation
-            v = universal_perturbation(X, f, grad_fs, delta=0.2,num_classes=num_classes)
+            v = universal_perturbation(X, f, grad_fs, delta=0.2, num_classes=num_classes)
 
             # Saving the universal perturbation
             np.save(os.path.join(file_perturbation), v)
@@ -137,14 +139,18 @@ if __name__ == '__main__':
         label_perturbed = np.argmax(f(image_perturbed), axis=1).flatten()
         str_label_perturbed = labels[np.int(label_perturbed)-1].split(',')[0]
 
-        # Show original and perturbed image
+        # Show original, perturbed image, and noise
         plt.figure()
-        plt.subplot(1, 2, 1)
+        plt.subplot(1, 3, 1)
         plt.imshow(undo_image_avg(image_original[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_original)
 
-        plt.subplot(1, 2, 2)
+        plt.subplot(1, 3, 2)
         plt.imshow(undo_image_avg(image_perturbed[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_perturbed)
-
+        
+        plt.subplot(1, 3, 3)
+        plt.imshow(undo_image_avg(v[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
+        plt.title('noise')
+        
         plt.show()

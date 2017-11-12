@@ -6,6 +6,8 @@ def proj_lp(v, xi, p):
     # Project on the lp ball centered at 0 and of radius xi
 
     # SUPPORTS only p = 2 and p = Inf for now
+    
+    # easy
     if p == 2:
         v = v * min(1, xi/np.linalg.norm(v.flatten(1)))
         # v = v / np.linalg.norm(v.flatten(1)) * xi
@@ -24,7 +26,7 @@ def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, 
 
     :param grads: gradient functions with respect to input (as many gradients as classes).
 
-    :param delta: controls the desired fooling rate (default = 80% fooling rate)
+    :param delta: controls the desired fooling rate (default = 80% fooling rate) P < 1 - delta
 
     :param max_iter_uni: optional other termination criterion (maximum number of iteration, default = np.inf)
 
@@ -48,15 +50,17 @@ def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, 
     itr = 0
     while fooling_rate < 1-delta and itr < max_iter_uni:
         # Shuffle the dataset
-        np.random.shuffle(dataset)
+        np.random.shuffle(dataset) # according to the first dimension
 
         print ('Starting pass number ', itr)
 
         # Go through the data set and compute the perturbation increments sequentially
-        for k in range(0, num_images): # use all the data till we get to enough fooling rate
-            cur_img = dataset[k:(k+1), :, :, :]
 
-            if int(np.argmax(np.array(f(cur_img)).flatten())) == int(np.argmax(np.array(f(cur_img+v)).flatten())):
+        for k in range(0, num_images): # use all the data till we get enough fooling rate 
+            cur_img = dataset[k:(k+1), :, :, :] # kth image
+            
+            # v perturbation cause no difference in classification
+            if int(np.argmax(np.array(f(cur_img)).flatten())) == int(np.argmax(np.array(f(cur_img+v)).flatten())): 
                 print('>> k = ', k, ', pass #', itr)
 
                 # Compute adversarial perturbation
@@ -76,7 +80,8 @@ def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, 
 
         est_labels_orig = np.zeros((num_images))
         est_labels_pert = np.zeros((num_images))
-
+        
+        # batch proccessing
         batch_size = 100
         num_batches = np.int(np.ceil(np.float(num_images) / np.float(batch_size)))
 
