@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import sys, getopt
 import zipfile
 from timeit import time
-from skimage.restoration import denoise_tv_chambolle
+from skimage.restoration import denoise_nl_means, denoise_tv_chambolle
+from skimage import img_as_float
 
 
 # Only used in the case no pb file is ready
@@ -40,7 +41,7 @@ if __name__ == '__main__':
 
     # Default values
     path_train_imagenet = '/datasets2/ILSVRC2012/train'
-    path_test_image = 'data/test_im.jpg'
+    path_test_image = 'data/test_img.png'
     
     try:
         opts, args = getopt.getopt(argv,"i:t:",["test_image=","training_path="])
@@ -133,6 +134,15 @@ if __name__ == '__main__':
         image_original = preprocess_image_batch([path_test_image], img_size=(256, 256), crop_size=(224, 224), color_mode="rgb")
         label_original = np.argmax(f(image_original), axis=1).flatten()
         str_label_original = labels[np.int(label_original)-1].split(',')[0]
+        
+        #print(image_original.shape)
+        #print(np.max(undo_image_avg(image_original).astype(dtype='uint8')))
+        #print(np.min(undo_image_avg(image_original).astype(dtype='uint8')))
+
+        image_nlm = denoise_nl_means(undo_image_avg(image_original[0,:,:,:])/255,7,11,0.05, multichannel=True)
+        image_nlm = image_nlm*255
+        label_nlm = np.argmax(f(image_nlm), axis=1).flatten()
+        str_label_nlm = labels[np.int(label_nlm)-1].split(',')[0]
 
         # Clip the perturbation to make sure images fit in uint8
         clipped_v = np.clip(undo_image_avg(image_original[0,:,:,:]+v[0,:,:,:]), 0, 255) - np.clip(undo_image_avg(image_original[0,:,:,:]), 0, 255)
@@ -141,25 +151,30 @@ if __name__ == '__main__':
         label_perturbed = np.argmax(f(image_perturbed), axis=1).flatten()
         str_label_perturbed = labels[np.int(label_perturbed)-1].split(',')[0]
         
-        image_denoised = denoise_tv_chambolle(image_perturbed, weight=10)
+        image_denoised = denoise_nl_means(undo_image_avg(image_perturbed[0,:,:,:])/255,7,11,0.05, multichannel=True)
+        image_denoised = image_denoised*255
         label_denoised = np.argmax(f(image_denoised), axis=1).flatten()
         str_label_denoised = labels[np.int(label_denoised)-1].split(',')[0]
 
         # Show original, perturbed image, denoised image and noise
         plt.figure()
-        plt.subplot(1, 4, 1)
+        plt.subplot(1, 5, 1)
         plt.imshow(undo_image_avg(image_original[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_original)
+        
+        plt.subplot(1, 5, 2)
+        plt.imshow(image_nlm[:, :, :].astype(dtype='uint8'), interpolation=None)
+        plt.title(str_label_nlm)
 
-        plt.subplot(1, 4, 2)
+        plt.subplot(1, 5, 3)
         plt.imshow(undo_image_avg(image_perturbed[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_perturbed)
         
-        plt.subplot(1, 4, 3)
-        plt.imshow(undo_image_avg(image_denoised[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
+        plt.subplot(1, 5, 4)
+        plt.imshow(image_denoised[:, :, :].astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_denoised)
         
-        plt.subplot(1, 4, 4)
+        plt.subplot(1, 5, 5)
         plt.imshow(undo_image_avg(v[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title('noise')
         
