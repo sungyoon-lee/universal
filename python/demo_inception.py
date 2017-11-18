@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import sys, getopt
 import zipfile
 from timeit import time
-from skimage.filter import denoise_tv_chambolle
+from skimage.restoration import denoise_tv_chambolle
 
 
 # Only used in the case no pb file is ready
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     # Default values
     path_train_imagenet = '/datasets2/ILSVRC2012/train'
-    path_test_image = 'data/test_img.png'
+    path_test_image = 'data/test_im.jpg'
     
     try:
         opts, args = getopt.getopt(argv,"i:t:",["test_image=","training_path="])
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         if opt == '-i':
             path_test_image = arg
 
-    with tf.(device):
+    with tf.device(device):
         persisted_sess = tf.Session()
         inception_model_path = os.path.join('data', 'tensorflow_inception_graph.pb') # concatenation
 
