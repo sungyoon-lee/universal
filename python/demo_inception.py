@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import sys, getopt
 import zipfile
 from timeit import time
+from skimage.filter import denoise_tv_chambolle
+
 
 # Only used in the case no pb file is ready
 if sys.version_info[0] >= 3: # python >=3
@@ -138,18 +140,26 @@ if __name__ == '__main__':
         image_perturbed = image_original + clipped_v[None, :, :, :]
         label_perturbed = np.argmax(f(image_perturbed), axis=1).flatten()
         str_label_perturbed = labels[np.int(label_perturbed)-1].split(',')[0]
+        
+        image_denoised = denoise_tv_chambolle(image_perturbed, weight=10)
+        label_denoised = np.argmax(f(image_denoised), axis=1).flatten()
+        str_label_denoised = labels[np.int(label_denoised)-1].split(',')[0]
 
-        # Show original, perturbed image, and noise
+        # Show original, perturbed image, denoised image and noise
         plt.figure()
-        plt.subplot(1, 3, 1)
+        plt.subplot(1, 4, 1)
         plt.imshow(undo_image_avg(image_original[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_original)
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, 4, 2)
         plt.imshow(undo_image_avg(image_perturbed[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_perturbed)
         
-        plt.subplot(1, 3, 3)
+        plt.subplot(1, 4, 3)
+        plt.imshow(undo_image_avg(image_denoised[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
+        plt.title(str_label_denoised)
+        
+        plt.subplot(1, 4, 4)
         plt.imshow(undo_image_avg(v[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title('noise')
         
