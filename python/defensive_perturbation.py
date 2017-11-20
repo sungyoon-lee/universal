@@ -154,7 +154,7 @@ def defensivepull(image, f, grads, num_classes=10, overshoot=0.02, max_iter=1):
                 k3 = k
             
             choose_d_k=(pert_k-pert)/(np.dot(w1,w_k)+1)
-            if choose_d_k < d
+            if choose_d_k < d:
                 d = choose_d_k
                 
         

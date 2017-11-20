@@ -62,10 +62,10 @@ def create_imagenet_npy(path_train_imagenet, len_batch=10000):
 
     # Sort the directory in alphabetical order (same as synset_words.txt)
     dirs = sorted(dirs)
-
+    
     it = 0
     Matrix = [0 for x in range(1000)]
-
+    
     for d in dirs:
         for _, _, filename in os.walk(os.path.join(path_train_imagenet, d)):
             Matrix[it] = filename
