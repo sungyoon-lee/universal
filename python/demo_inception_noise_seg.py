@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import sys, getopt
 import zipfile
 from timeit import time
-from skimage.restoration import denoise_nl_means, denoise_tv_chambolle
-from skimage import img_as_float
+from skimage.restoration import denoise_tv_chambolle
 
 
 # Only used in the case no pb file is ready
@@ -41,7 +40,7 @@ if __name__ == '__main__':
 
     # Default values
     path_train_imagenet = '/datasets2/ILSVRC2012/train'
-    path_test_image = 'data/test_im8.jpg'
+    path_test_image = 'data/test_im.jpg'
     
     try:
         opts, args = getopt.getopt(argv,"i:t:",["test_image=","training_path="])
@@ -135,77 +134,51 @@ if __name__ == '__main__':
         label_original = np.argmax(f(image_original), axis=1).flatten()
         str_label_original = labels[np.int(label_original)-1].split(',')[0]
         
-        #print(image_original.shape)
-        #print(np.max(undo_image_avg(image_original).astype(dtype='uint8')))
-        #print(np.min(undo_image_avg(image_original).astype(dtype='uint8')))
+        image_ROF = denoise_tv_chambolle(image_original, weight=10, multichannel=True)
+        label_ROF = np.argmax(f(image_ROF), axis=1).flatten()
+        str_label_ROF = labels[np.int(label_ROF)-1].split(',')[0]
 
-        image_nlm2 = denoise_nl_means(undo_image_avg(image_original[0,:,:,:])/255,7,11,0.02, multichannel=True)
-        image_nlm2 = image_nlm2*255
-        label_nlm2 = np.argmax(f(image_nlm2), axis=1).flatten()
-        str_label_nlm2 = labels[np.int(label_nlm2)-1].split(',')[0]
-
-        image_nlm = denoise_nl_means(undo_image_avg(image_original[0,:,:,:])/255,7,11,0.05, multichannel=True)
-        image_nlm = image_nlm*255
-        label_nlm = np.argmax(f(image_nlm), axis=1).flatten()
-        str_label_nlm = labels[np.int(label_nlm)-1].split(',')[0]
-
-        image_nlm10 = denoise_nl_means(undo_image_avg(image_original[0,:,:,:])/255,7,11,0.1, multichannel=True)
-        image_nlm10 = image_nlm10*255
-        label_nlm10 = np.argmax(f(image_nlm10), axis=1).flatten()
-        str_label_nlm10 = labels[np.int(label_nlm10)-1].split(',')[0]
         # Clip the perturbation to make sure images fit in uint8
         clipped_v = np.clip(undo_image_avg(image_original[0,:,:,:]+v[0,:,:,:]), 0, 255) - np.clip(undo_image_avg(image_original[0,:,:,:]), 0, 255)
+
+        image_perturbed1 = image_original + 1/4*clipped_v[None, :, :, :]
+        label_perturbed1 = np.argmax(f(image_perturbed1), axis=1).flatten()
+        str_label_perturbed1 = labels[np.int(label_perturbed1)-1].split(',')[0]
+        
+
+        image_perturbed2 = image_original + 2/4*clipped_v[None, :, :, :]
+        label_perturbed2 = np.argmax(f(image_perturbed2), axis=1).flatten()
+        str_label_perturbed2 = labels[np.int(label_perturbed2)-1].split(',')[0]
+
+
+        image_perturbed3 = image_original + 3/4*clipped_v[None, :, :, :]
+        label_perturbed3 = np.argmax(f(image_perturbed3), axis=1).flatten()
+        str_label_perturbed3 = labels[np.int(label_perturbed3)-1].split(',')[0]
 
         image_perturbed = image_original + clipped_v[None, :, :, :]
         label_perturbed = np.argmax(f(image_perturbed), axis=1).flatten()
         str_label_perturbed = labels[np.int(label_perturbed)-1].split(',')[0]
 
-        image_denoised2 = denoise_nl_means(undo_image_avg(image_perturbed[0,:,:,:])/255,7,11,0.02, multichannel=True)
-        image_denoised2 = image_denoised2*255
-        label_denoised2 = np.argmax(f(image_denoised2), axis=1).flatten()
-        str_label_denoised2 = labels[np.int(label_denoised2)-1].split(',')[0]
-        
-        image_denoised = denoise_nl_means(undo_image_avg(image_perturbed[0,:,:,:])/255,7,11,0.05, multichannel=True)
-        image_denoised = image_denoised*255
-        label_denoised = np.argmax(f(image_denoised), axis=1).flatten()
-        str_label_denoised = labels[np.int(label_denoised)-1].split(',')[0]
-
-        image_denoised10 = denoise_nl_means(undo_image_avg(image_perturbed[0,:,:,:])/255,7,11,0.1, multichannel=True)
-        image_denoised10 = image_denoised10*255
-        label_denoised10 = np.argmax(f(image_denoised10), axis=1).flatten()
-        str_label_denoised10 = labels[np.int(label_denoised)-1].split(',')[0]
         # Show original, perturbed image, denoised image and noise
         plt.figure()
-        plt.subplot(2, 4, 1)
+        plt.subplot(1, 5, 1)
         plt.imshow(undo_image_avg(image_original[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_original)
         
-        plt.subplot(2, 4, 2)
-        plt.imshow(image_nlm2[:, :, :].astype(dtype='uint8'), interpolation=None)
-        plt.title(str_label_nlm2)
+        plt.subplot(1, 5, 2)
+        plt.imshow(undo_image_avg(image_perturbed1[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
+        plt.title(str_label_perturbed1)
 
-        plt.subplot(2, 4, 3)
-        plt.imshow(image_nlm[:, :, :].astype(dtype='uint8'), interpolation=None)
-        plt.title(str_label_nlm)
-
-        plt.subplot(2, 4, 4)
-        plt.imshow(image_nlm10[:, :, :].astype(dtype='uint8'), interpolation=None)
-        plt.title(str_label_nlm10)
-
-        plt.subplot(2, 4, 5)
+        plt.subplot(1, 5, 3)
+        plt.imshow(undo_image_avg(image_perturbed2[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
+        plt.title(str_label_perturbed2)
+        
+        plt.subplot(1, 5, 4)
+        plt.imshow(undo_image_avg(image_perturbed3[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
+        plt.title(str_label_perturbed3)
+        
+        plt.subplot(1, 5, 5)
         plt.imshow(undo_image_avg(image_perturbed[0, :, :, :]).astype(dtype='uint8'), interpolation=None)
         plt.title(str_label_perturbed)
-
-        plt.subplot(2, 4, 6)
-        plt.imshow(image_denoised2[:, :, :].astype(dtype='uint8'), interpolation=None)
-        plt.title(str_label_denoised2)
-        
-        plt.subplot(2, 4, 7)
-        plt.imshow(image_denoised[:, :, :].astype(dtype='uint8'), interpolation=None)
-        plt.title(str_label_denoised)
-        
-        plt.subplot(2, 4, 8)
-        plt.imshow(image_denoised10[:, :, :].astype(dtype='uint8'), interpolation=None)
-        plt.title(str_label_denoised10)
         
         plt.show()
